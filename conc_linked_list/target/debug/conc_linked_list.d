@@ -1,1 +1,1 @@
-/home/mihnea/Desktop/Programming/Rust/conc_linked_list/target/debug/conc_linked_list: /home/mihnea/Desktop/Programming/Rust/conc_linked_list/src/concurrent_linked_list.rs /home/mihnea/Desktop/Programming/Rust/conc_linked_list/src/main.rs
+/home/mihnea/Desktop/Programming/Rust/rs-conc-linked/conc_linked_list/target/debug/conc_linked_list: /home/mihnea/Desktop/Programming/Rust/rs-conc-linked/conc_linked_list/src/concurrent_linked_list.rs /home/mihnea/Desktop/Programming/Rust/rs-conc-linked/conc_linked_list/src/main.rs
