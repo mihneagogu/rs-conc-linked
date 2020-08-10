@@ -35,9 +35,28 @@ impl<T> ConcurrentLinkedList<T> {
         Self { node: arc_mut_new(Some(node)) }
     }
 
+    #[allow(dead_code)]
+    pub fn push(&self, item: T) {
+        // TODO: Continue function
+        let mut next = self.node.lock().unwrap();
+        if next.is_none() {
+            // Empty list
+            let first_node = Node { next: arc_mut_new(None), value: Some(item) };
+            next.replace(first_node);
+            return;
+        }
+    }
+
+    #[allow(dead_code)]
     pub fn contains(&self, like: &T) -> bool
         where T: Eq,
     {
+        // XXX: Does this function really need to lock?
+        // Even if it is locked, there can be no guarantee
+        // that some other thread doesn't edit the outside the locked area
+        // Therefore the only place where this gives a cosnsistent result
+        // is when all other threads have joined
+        
         // let mut previous = arc_mut_new(None);
         // let mut next = Arc::clone(&self.node);
         let mut next: MutexGuard<Option<Node<T>>> = self.node.lock().unwrap();

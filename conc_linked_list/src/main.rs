@@ -22,4 +22,18 @@ mod tests {
             assert!(list_arc.contains(&12));
         });
     }
+
+    #[test]
+    fn contains_one_push() {
+        let list = ConcurrentLinkedList::new();
+        let list = Arc::new(list);
+        let list_arc = Arc::clone(&list);
+        thread::spawn(move || {
+            list.push(12);
+        }).join();
+
+        assert!(list_arc.contains(&12));
+
+
+    }
 }
