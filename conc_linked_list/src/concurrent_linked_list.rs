@@ -126,7 +126,7 @@ impl<T> ConcurrentLinkedList<T> {
         let mut previous: Option<node_guard![T]> = None;
         if head.is_none() {
             // Empty list
-            println!("pushed: {:?}", &item);
+            //println!("pushed: {:?}", &item);
             let first_node = Node {
                 next: arc_mut_new(None),
                 value: Some(item),
@@ -135,7 +135,7 @@ impl<T> ConcurrentLinkedList<T> {
             return;
         }
         let previous_head = head.take();
-        println!("pushed: {:?}", &item);
+        //println!("pushed: {:?}", &item);
         let new_head = Node {
             next: arc_mut_new(previous_head),
             value: Some(item),

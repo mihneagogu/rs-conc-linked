@@ -6,38 +6,7 @@ mod concurrent_linked_list;
 use concurrent_linked_list::*;
 
 fn main() {
-    let list = ConcurrentLinkedList::new();
-    let list = Arc::new(list);
 
-    let mut threads = vec![];
-    let nthreads = 100;
-    (0..=nthreads).for_each(|n| {
-        let arc_list = Arc::clone(&list);
-        threads.push(thread::spawn(move || {
-            arc_list.push(n);
-        }));
-    });
-
-    for thread in threads {
-        let _ = thread.join();
-    }
-
-    (0..=nthreads).for_each(|n| { assert!(list.contains(&n)); });
-    assert!(!list.contains(&(nthreads + 1)));
-
-    (0..50).for_each(|n| {
-        println!("popped: {:?}", list.remove_one());
-    });
-
-    let mut still_in = vec![];
-
-    (0..=nthreads).for_each(|n| {
-        if list.contains(&n) {
-            still_in.push(n);
-        }
-        //assert!(!list.contains(&n));
-    });
-    println!("still in: {}", still_in.len());
 }
 
 #[cfg(test)]
@@ -172,7 +141,8 @@ mod tests {
         assert!(!list.contains(&(nthreads + 1)));
 
         (0..50).for_each(|n| {
-            println!("popped: {:?}", list.remove_one());
+            //println!("popped: {:?}", list.remove_one());
+            list.remove_one();
         });
 
         let mut still_in = vec![];
@@ -183,6 +153,55 @@ mod tests {
             }
             //assert!(!list.contains(&n));
         });
-        println!("still in: {}", still_in.len());
+        //println!("still in: {}", still_in.len());
+        assert_eq!(still_in.len(), 51);
     }
+
+    #[test]
+    fn push_and_pop_threading() {
+        let list = ConcurrentLinkedList::new();
+        let list = Arc::new(list);
+
+        let mut threads = vec![];
+        let nthreads = 100;
+        (0..=nthreads).for_each(|n| {
+            let arc_list = Arc::clone(&list);
+            threads.push(thread::spawn(move || {
+                arc_list.push(n);
+            }));
+        });
+
+        for thread in threads {
+            let _ = thread.join();
+        }
+
+        (0..=nthreads).for_each(|n| { assert!(list.contains(&n)); });
+        assert!(!list.contains(&(nthreads + 1)));
+
+        let mut pop_threads = vec![];
+
+        (0..50).for_each(|n| {
+            let arc_list = Arc::clone(&list);
+            pop_threads.push(thread::spawn(move || {
+            //println!("popped: {:?}", arc_list.remove_one());
+                arc_list.remove_one();
+            }));
+        });
+
+        for thread in pop_threads {
+            let _ = thread.join();
+        }
+
+        let mut still_in = vec![];
+
+        (0..=nthreads).for_each(|n| {
+            if list.contains(&n) {
+                still_in.push(n);
+            }
+            //assert!(!list.contains(&n));
+        });
+        //println!("still in: {}", still_in.len());
+        assert_eq!(still_in.len(), 51);
+    }
+
 }
