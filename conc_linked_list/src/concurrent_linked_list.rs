@@ -96,8 +96,8 @@ impl<T> ConcurrentLinkedList<T> {
             return None;
         }
 
-        let mut new_node = new_node.unwrap_or(Mutex::new(None));
-        new_node.lock().unwrap();
+        let new_node = new_node.unwrap_or(Mutex::new(None));
+        // new_node.lock().unwrap();
 
         // Take the value under mutex, since we know we're the only owner
         let new_node = new_node.into_inner().unwrap();
@@ -123,10 +123,9 @@ impl<T> ConcurrentLinkedList<T> {
     {
         // TODO: Continue function
         let mut head = self.node.lock().unwrap();
-        let mut previous: Option<node_guard![T]> = None;
         if head.is_none() {
             // Empty list
-            //println!("pushed: {:?}", &item);
+            // println!("pushed: {:?}", &item);
             let first_node = Node {
                 next: arc_mut_new(None),
                 value: Some(item),
@@ -135,7 +134,7 @@ impl<T> ConcurrentLinkedList<T> {
             return;
         }
         let previous_head = head.take();
-        //println!("pushed: {:?}", &item);
+        // println!("pushed: {:?}", &item);
         let new_head = Node {
             next: arc_mut_new(previous_head),
             value: Some(item),
