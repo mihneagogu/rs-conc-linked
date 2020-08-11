@@ -1,11 +1,14 @@
 use std::mem;
 use std::sync::{Arc, Mutex, MutexGuard};
 
+/// Basically a concurrent stack with no pop method
+/// and with linear contains method, which is using locks
+/// However, `contains` does not guarantee that the item is not inside,
+/// since another thread may have added the element at the beginning 
 #[derive(Debug)]
 pub struct ConcurrentLinkedList<T> {
     node: Arc<Mutex<Option<Node<T>>>>,
 }
-
 
 #[doc = "Uses the type $t to construct type MutexGuard<Option<Node<T>>> 
 since the standard library doesn't let me do this inside an impl block"]
@@ -36,7 +39,6 @@ fn arc_mut_new<T>(value: T) -> Arc<Mutex<T>> {
 }
 
 impl<T> ConcurrentLinkedList<T> {
-
     /// Constructs an empty list
     pub fn new() -> Self {
         Self {
@@ -68,23 +70,29 @@ impl<T> ConcurrentLinkedList<T> {
         Self {
             node: arc_mut_new(Some(head)),
         }
-
     }
 
     /// Pushes an item into the list
     #[allow(dead_code)]
     pub fn push(&self, item: T) {
         // TODO: Continue function
-        let mut next = self.node.lock().unwrap();
-        if next.is_none() {
+        let mut head = self.node.lock().unwrap();
+        let mut previous: Option<node_guard![T]> = None;
+        if head.is_none() {
             // Empty list
             let first_node = Node {
                 next: arc_mut_new(None),
                 value: Some(item),
             };
-            next.replace(first_node);
+            head.replace(first_node);
             return;
         }
+        let previous_head = head.take();
+        let new_head = Node {
+            next: arc_mut_new(previous_head),
+            value: Some(item),
+        };
+        head.replace(new_head);
     }
 
     /// Finds the position of the node that contains 'like', and returns the node

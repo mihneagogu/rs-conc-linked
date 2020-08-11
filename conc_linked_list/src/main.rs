@@ -20,7 +20,7 @@ mod tests {
         let list_arc = Arc::clone(&list);
         thread::spawn(move || {
             assert!(list_arc.contains(&12));
-        });
+        }).join();
     }
 
     #[test]
@@ -32,7 +32,7 @@ mod tests {
             let (head, tail) = list_arc.find(&12);
             assert!(head.is_none());
             assert!(tail.is_some());
-        });
+        }).join();
     }
 
     #[test]
@@ -45,7 +45,7 @@ mod tests {
             let (head, tail) = list_arc_2.find(&2);
             assert!(head.is_some());
             assert!(tail.is_some());
-        });
+        }).join();
     }
 
     #[test]
@@ -56,7 +56,7 @@ mod tests {
         thread::spawn(move || {
             assert!(list_arc.contains(&1));
             assert!(list_arc.contains(&2));
-        });
+        }).join();
     }
 
     #[test]
@@ -70,5 +70,52 @@ mod tests {
         .join();
 
         assert!(list_arc.contains(&12));
+    }
+
+    #[test]
+    fn test_push() {
+        let list = ConcurrentLinkedList::new();
+        let list = Arc::new(list);
+        let c_list = Arc::clone(&list);
+        let arc_list = Arc::clone(&list);
+        thread::spawn(move || {
+            (0..100).for_each(|n| {
+                arc_list.push(n);
+            });
+        }).join();
+
+        thread::spawn(move || {
+            (100..=200).for_each(|n| {
+                c_list.push(n);
+            });
+        }).join();
+
+        (0..=200).for_each(|n| {
+            assert!(list.contains(&n));
+        });
+    }
+
+    #[test]
+    fn test_push_chaotic() {
+        let list = ConcurrentLinkedList::new();
+        let list = Arc::new(list);
+
+        let mut threads = vec![];
+        let nthreads = 100;
+        (0..=nthreads).for_each(|n| {
+            let arc_list = Arc::clone(&list);
+            threads.push(thread::spawn(move || {
+               arc_list.push(n); 
+            }));
+        });
+
+        for thread in threads {
+            let _ = thread.join();
+        }
+
+        (0..=nthreads).for_each(|n| { assert!(list.contains(&n)); });
+        assert!(!list.contains(& (nthreads + 1) ));
+
+
     }
 }
