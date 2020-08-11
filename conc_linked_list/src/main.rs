@@ -2,9 +2,39 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 mod concurrent_linked_list;
+
 use concurrent_linked_list::*;
+
 fn main() {
-    println!("Hello, world!");
+    let list = ConcurrentLinkedList::new();
+    let list = Arc::new(list);
+
+    let mut threads = vec![];
+    let nthreads = 100;
+    (0..=nthreads).for_each(|n| {
+        let arc_list = Arc::clone(&list);
+        threads.push(thread::spawn(move || {
+            arc_list.push(n);
+        }));
+    });
+
+    for thread in threads {
+        let _ = thread.join();
+    }
+
+    (0..=nthreads).for_each(|n| { assert!(list.contains(&n)); });
+    assert!(!list.contains(&(nthreads + 1)));
+
+    (0..50).for_each(|n| {
+        list.pop();
+    });
+
+    (0..=nthreads).for_each(|n| {
+        if list.contains(&n) {
+            println!("{}", n);
+        }
+        //assert!(!list.contains(&n));
+    });
 }
 
 #[cfg(test)]
@@ -67,7 +97,7 @@ mod tests {
         thread::spawn(move || {
             list.push(12);
         })
-        .join();
+            .join();
 
         assert!(list_arc.contains(&12));
     }
@@ -105,7 +135,7 @@ mod tests {
         (0..=nthreads).for_each(|n| {
             let arc_list = Arc::clone(&list);
             threads.push(thread::spawn(move || {
-               arc_list.push(n); 
+                arc_list.push(n);
             }));
         });
 
@@ -114,8 +144,31 @@ mod tests {
         }
 
         (0..=nthreads).for_each(|n| { assert!(list.contains(&n)); });
-        assert!(!list.contains(& (nthreads + 1) ));
+        assert!(!list.contains(&(nthreads + 1)));
+    }
 
+    #[test]
+    fn push_and_pop_chaotic() {
+        let list = ConcurrentLinkedList::new();
+        let list = Arc::new(list);
 
+        let mut threads = vec![];
+        let nthreads = 100;
+        (0..=nthreads).for_each(|n| {
+            let arc_list = Arc::clone(&list);
+            threads.push(thread::spawn(move || {
+                arc_list.push(n);
+            }));
+        });
+
+        for thread in threads {
+            let _ = thread.join();
+        }
+
+        (0..=nthreads).for_each(|n| { assert!(list.contains(&n)); });
+        assert!(!list.contains(&(nthreads + 1)));
+
+        (0..=nthreads).for_each(|n| { list.pop(); });
+        (0..=nthreads).for_each(|n| { assert!(!list.contains(&n)); });
     }
 }

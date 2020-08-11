@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 /// Basically a concurrent stack with no pop method
 /// and with linear contains method, which is using locks
 /// However, `contains` does not guarantee that the item is not inside,
-/// since another thread may have added the element at the beginning 
+/// since another thread may have added the element at the beginning
 #[derive(Debug)]
 pub struct ConcurrentLinkedList<T> {
     node: Arc<Mutex<Option<Node<T>>>>,
@@ -32,6 +32,10 @@ impl<T> Node<T> {
     fn get_next(&self) -> Arc<Mutex<Option<Node<T>>>> {
         Arc::clone(&self.next)
     }
+
+    fn into_items(self) -> (Arc<Mutex<Option<Node<T>>>>, Option<T>) {
+        (self.next, self.value)
+    }
 }
 
 fn arc_mut_new<T>(value: T) -> Arc<Mutex<T>> {
@@ -42,7 +46,7 @@ impl<T> ConcurrentLinkedList<T> {
     /// Constructs an empty list
     pub fn new() -> Self {
         Self {
-            node: arc_mut_new((None)),
+            node: arc_mut_new(None),
         }
     }
 
@@ -72,6 +76,38 @@ impl<T> ConcurrentLinkedList<T> {
         }
     }
 
+    pub fn pop(&self) -> Option<T> {
+        let mut head = self.node.lock().unwrap();
+        if head.is_none() {
+            return None;
+        }
+        // Take the head items, so that when trying to unwrap the arc we are guaranteed to have on 1 reference
+        // to Arc, so unwrapping works
+        let (arc_next, item) = head.take().unwrap().into_items();
+        let new_node = Arc::try_unwrap(arc_next);
+
+        // Shouldn't need this since we have already locked first node, so there is nobody else
+        if new_node.is_err() {
+            return None;
+        }
+
+        let mut new_node = new_node.unwrap_or(Mutex::new(None));
+
+        // Take the value under mutex, since we know we're the only owner
+        let new_node = new_node.into_inner().unwrap();
+        if new_node.is_none() {
+            // Only 1 element in list
+            // So the current head is just `None` since
+            head.replace(Node {
+                next: Arc::new(Mutex::new(None)),
+                value: None,
+            });
+            return item;
+        }
+        head.replace(new_node.unwrap());
+        item
+    }
+
     /// Pushes an item into the list
     #[allow(dead_code)]
     pub fn push(&self, item: T) {
@@ -99,8 +135,8 @@ impl<T> ConcurrentLinkedList<T> {
     /// and the node before it, if any
     #[allow(dead_code)]
     pub fn find(&self, like: &T) -> (Option<node_guard![T]>, Option<node_guard![T]>)
-    where
-        T: Eq,
+        where
+            T: Eq,
     {
         let mut next: MutexGuard<Option<Node<T>>> = self.node.lock().unwrap();
         let mut is_first = true;
@@ -145,8 +181,8 @@ impl<T> ConcurrentLinkedList<T> {
     /// But it is not here
     #[allow(dead_code)]
     pub fn contains(&self, like: &T) -> bool
-    where
-        T: Eq,
+        where
+            T: Eq,
     {
         // TODO: Change function using find()
         let mut next: MutexGuard<Option<Node<T>>> = self.node.lock().unwrap();
