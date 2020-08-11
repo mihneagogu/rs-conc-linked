@@ -26,15 +26,18 @@ fn main() {
     assert!(!list.contains(&(nthreads + 1)));
 
     (0..50).for_each(|n| {
-        list.pop();
+        println!("popped: {:?}", list.remove_one());
     });
+
+    let mut still_in = vec![];
 
     (0..=nthreads).for_each(|n| {
         if list.contains(&n) {
-            println!("{}", n);
+            still_in.push(n);
         }
         //assert!(!list.contains(&n));
     });
+    println!("still in: {}", still_in.len());
 }
 
 #[cfg(test)]
@@ -168,7 +171,18 @@ mod tests {
         (0..=nthreads).for_each(|n| { assert!(list.contains(&n)); });
         assert!(!list.contains(&(nthreads + 1)));
 
-        (0..=nthreads).for_each(|n| { list.pop(); });
-        (0..=nthreads).for_each(|n| { assert!(!list.contains(&n)); });
+        (0..50).for_each(|n| {
+            println!("popped: {:?}", list.remove_one());
+        });
+
+        let mut still_in = vec![];
+
+        (0..=nthreads).for_each(|n| {
+            if list.contains(&n) {
+                still_in.push(n);
+            }
+            //assert!(!list.contains(&n));
+        });
+        println!("still in: {}", still_in.len());
     }
 }

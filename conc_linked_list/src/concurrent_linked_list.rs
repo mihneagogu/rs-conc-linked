@@ -76,7 +76,12 @@ impl<T> ConcurrentLinkedList<T> {
         }
     }
 
-    pub fn pop(&self) -> Option<T> {
+
+    /// Removes which items happens to be at the top of the list
+    /// If used across threads it is guaranteed to retrieve the items in the order which they were inserted in
+    /// HOWEVER! If the order of insertion is controlled by the scheduler, there is no guarantee that the order
+    /// the scheduler chose is the order the user chose
+    pub fn remove_one(&self) -> Option<T> {
         let mut head = self.node.lock().unwrap();
         if head.is_none() {
             return None;
@@ -92,6 +97,7 @@ impl<T> ConcurrentLinkedList<T> {
         }
 
         let mut new_node = new_node.unwrap_or(Mutex::new(None));
+        new_node.lock().unwrap();
 
         // Take the value under mutex, since we know we're the only owner
         let new_node = new_node.into_inner().unwrap();
@@ -108,14 +114,19 @@ impl<T> ConcurrentLinkedList<T> {
         item
     }
 
-    /// Pushes an item into the list
+    /// Adds the item to the list, but it does not guarantee order if used across many threads,
+    /// since the scheduler is free to choose which value gets entered first, the only thing we guarantee
+    /// is that the all values pushed do end up in the List after all, not its order
     #[allow(dead_code)]
-    pub fn push(&self, item: T) {
+    pub fn push(&self, item: T)
+    where T: std::fmt::Debug
+    {
         // TODO: Continue function
         let mut head = self.node.lock().unwrap();
         let mut previous: Option<node_guard![T]> = None;
         if head.is_none() {
             // Empty list
+            println!("pushed: {:?}", &item);
             let first_node = Node {
                 next: arc_mut_new(None),
                 value: Some(item),
@@ -124,6 +135,7 @@ impl<T> ConcurrentLinkedList<T> {
             return;
         }
         let previous_head = head.take();
+        println!("pushed: {:?}", &item);
         let new_head = Node {
             next: arc_mut_new(previous_head),
             value: Some(item),
